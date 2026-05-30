@@ -26,7 +26,7 @@ async def cmd_start(message: Message):
         "/style — посмотри профиль стиля\n"
         "/plan — текущий контент-план\n"
         "/newplan — создать новый план\n"
-        "/write <тема> — написать пост\n"
+        "/write [тема] — написать пост\n"
         "/edit — отредактировать текст (отправь следом)\n\n"
         "Или просто напиши что нужно — разберусь."
     )
@@ -80,7 +80,7 @@ async def cmd_write(message: Message):
         return
     brief = message.text.removeprefix("/write").strip()
     if not brief:
-        await message.answer("Укажи тему: /write <тема>")
+        await message.answer("Укажи тему: /write [тема]")
         return
     profile = read_style_profile()
     if not profile:
