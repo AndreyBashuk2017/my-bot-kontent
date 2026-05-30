@@ -6,9 +6,9 @@ from bot.config import ALLOWED_USER_ID, EXAMPLES_DIR
 from bot.agents.orchestrator import detect_intent, write_post, edit_post
 from bot.agents.decomposer import extract_style_patterns, parse_json_export, parse_md_export
 from bot.storage.style_profile import read_style_profile, write_style_profile
+from bot.state import pending_edit
 
 router = Router()
-_pending_edit: dict[int, bool] = {}
 
 
 def auth(message: Message) -> bool:
@@ -50,8 +50,8 @@ async def handle_text(message: Message):
         return
 
     user_id = message.from_user.id
-    if _pending_edit.get(user_id):
-        _pending_edit[user_id] = False
+    if pending_edit.get(user_id):
+        pending_edit[user_id] = False
         profile = read_style_profile()
         if not profile:
             await message.answer("Сначала загрузи примеры стиля через /upload.")
@@ -75,7 +75,7 @@ async def handle_text(message: Message):
         await message.answer(result["text"] + note)
 
     elif intent == "edit":
-        _pending_edit[user_id] = True
+        pending_edit[user_id] = True
         await message.answer("Отправь текст, который нужно отредактировать.")
 
     else:
