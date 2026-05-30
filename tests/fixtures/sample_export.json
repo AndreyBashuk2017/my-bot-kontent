@@ -1,0 +1,8 @@
+{
+  "name": "My Channel",
+  "messages": [
+    {"id": 1, "type": "message", "text": "Первый пост. Коротко и по делу."},
+    {"id": 2, "type": "message", "text": "Второй — ещё короче."},
+    {"id": 3, "type": "service", "text": ""}
+  ]
+}
