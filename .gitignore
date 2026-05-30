@@ -1,0 +1,7 @@
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+data/style_profile.json
+data/content_plan.md
+data/examples/
