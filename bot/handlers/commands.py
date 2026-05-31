@@ -67,9 +67,13 @@ async def cmd_newplan(message: Message):
         await message.answer("Сначала загрузи примеры стиля через /upload.")
         return
     await message.answer("Генерирую темы...")
-    topics = await suggest_topics(profile, n=10)
-    await message.answer("Составляю план...")
-    plan = await create_content_plan(profile, topics)
+    try:
+        topics = await suggest_topics(profile, n=10)
+        await message.answer("Составляю план...")
+        plan = await create_content_plan(profile, topics)
+    except Exception as e:
+        await message.answer(f"Ошибка генерации плана: {e}")
+        return
     write_content_plan(plan)
     await message.answer(f"Контент-план готов:\n\n{plan}")
 

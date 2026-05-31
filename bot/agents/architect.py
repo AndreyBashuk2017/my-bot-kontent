@@ -37,7 +37,7 @@ async def create_content_plan(style_profile: dict, topics: list[str]) -> str:
     topics_str = "\n".join(f"- {t}" for t in topics)
     response = await openai_client.chat.completions.create(
         model="anthropic/claude-sonnet-4-6",
-        max_tokens=1024,
+        max_tokens=600,
         temperature=0.5,
         messages=[
             {"role": "system", "content": ARCHITECT_SYSTEM},
