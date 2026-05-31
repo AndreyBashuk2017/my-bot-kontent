@@ -14,7 +14,7 @@ ARCHITECT_SYSTEM = """Ты контент-стратег Telegram-канала. 
 async def suggest_topics(style_profile: dict, n: int = 5) -> list[str]:
     profile_str = json.dumps(style_profile, ensure_ascii=False)
     response = await openai_client.chat.completions.create(
-        model="anthropic/claude-sonnet-4-6",
+        model="anthropic/claude-haiku-4-5",
         max_tokens=512,
         temperature=0.5,
         messages=[
@@ -36,7 +36,7 @@ async def create_content_plan(style_profile: dict, topics: list[str]) -> str:
     profile_str = json.dumps(style_profile, ensure_ascii=False)
     topics_str = "\n".join(f"- {t}" for t in topics)
     response = await openai_client.chat.completions.create(
-        model="anthropic/claude-sonnet-4-6",
+        model="anthropic/claude-haiku-4-5",
         max_tokens=600,
         temperature=0.5,
         messages=[

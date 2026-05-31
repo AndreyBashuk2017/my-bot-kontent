@@ -25,7 +25,7 @@ WRITER_SYSTEM = """Ты копирайтер Telegram-канала. Ты пиш�
 
 async def detect_intent(user_message: str) -> str:
     response = await openai_client.chat.completions.create(
-        model="anthropic/claude-opus-4-8",
+        model="anthropic/claude-haiku-4-5",
         max_tokens=10,
         temperature=0.2,
         messages=[
@@ -46,7 +46,7 @@ async def write_post(brief: str, style_profile: dict) -> dict:
             issues_hint = "\n\nПредыдущая версия получила замечания: " + ", ".join(best["check"]["issues"]) + ". Исправь их."
 
         response = await openai_client.chat.completions.create(
-            model="anthropic/claude-opus-4-8",
+            model="anthropic/claude-haiku-4-5",
             max_tokens=600,
             temperature=0.2,
             messages=[
@@ -74,7 +74,7 @@ async def edit_post(original: str, instructions: str, style_profile: dict) -> di
             issues_hint = "\n\nЗамечания: " + ", ".join(best["check"]["issues"]) + ". Исправь."
 
         response = await openai_client.chat.completions.create(
-            model="anthropic/claude-opus-4-8",
+            model="anthropic/claude-haiku-4-5",
             max_tokens=600,
             temperature=0.2,
             messages=[

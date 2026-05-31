@@ -23,7 +23,7 @@ STYLE_EXTRACTION_PROMPT = """Ты аналитик текстового стил
 async def extract_style_patterns(posts: list[str]) -> dict:
     posts_text = "\n---\n".join(posts[:20])
     response = await openai_client.chat.completions.create(
-        model="anthropic/claude-sonnet-4-6",
+        model="anthropic/claude-haiku-4-5",
         max_tokens=1024,
         temperature=0.3,
         messages=[
