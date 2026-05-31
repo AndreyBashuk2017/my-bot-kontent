@@ -87,7 +87,11 @@ async def cmd_write(message: Message):
         await message.answer("Сначала загрузи примеры стиля через /upload.")
         return
     await message.answer("Пишу...")
-    result = await write_post(brief, profile)
+    try:
+        result = await write_post(brief, profile)
+    except Exception as e:
+        await message.answer(f"Ошибка генерации: {e}")
+        return
     note = "" if result["check"]["approved"] else f"\n\n⚠️ Оценка: {result['check']['score']}/10"
     await message.answer(result["text"] + note)
 

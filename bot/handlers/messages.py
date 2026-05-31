@@ -65,12 +65,20 @@ async def handle_text(message: Message):
             await message.answer("Сначала загрузи примеры стиля через /upload.")
             return
         await message.answer("Редактирую...")
-        result = await edit_post(message.text, "Сделай короче, хлёстче, убери воду", profile)
+        try:
+            result = await edit_post(message.text, "Сделай короче, хлёстче, убери воду", profile)
+        except Exception as e:
+            await message.answer(f"Ошибка редактирования: {e}")
+            return
         note = "" if result["check"]["approved"] else f"\n\n⚠️ Оценка: {result['check']['score']}/10"
         await message.answer(result["text"] + note)
         return
 
-    intent = await detect_intent(message.text)
+    try:
+        intent = await detect_intent(message.text)
+    except Exception as e:
+        await message.answer(f"Ошибка: {e}")
+        return
 
     if intent == "write":
         profile = read_style_profile()
@@ -78,7 +86,11 @@ async def handle_text(message: Message):
             await message.answer("Сначала загрузи примеры стиля через /upload.")
             return
         await message.answer("Пишу...")
-        result = await write_post(message.text, profile)
+        try:
+            result = await write_post(message.text, profile)
+        except Exception as e:
+            await message.answer(f"Ошибка генерации: {e}")
+            return
         note = "" if result["check"]["approved"] else f"\n\n⚠️ Оценка: {result['check']['score']}/10"
         await message.answer(result["text"] + note)
 

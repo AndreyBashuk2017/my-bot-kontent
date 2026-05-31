@@ -47,7 +47,7 @@ async def write_post(brief: str, style_profile: dict) -> dict:
 
         response = await openai_client.chat.completions.create(
             model="anthropic/claude-opus-4-8",
-            max_tokens=1024,
+            max_tokens=600,
             temperature=0.2,
             messages=[
                 {"role": "system", "content": WRITER_SYSTEM + f"\n\nПрофиль стиля автора:\n{profile_str}"},
@@ -75,7 +75,7 @@ async def edit_post(original: str, instructions: str, style_profile: dict) -> di
 
         response = await openai_client.chat.completions.create(
             model="anthropic/claude-opus-4-8",
-            max_tokens=1024,
+            max_tokens=600,
             temperature=0.2,
             messages=[
                 {"role": "system", "content": WRITER_SYSTEM + f"\n\nПрофиль стиля автора:\n{profile_str}"},
