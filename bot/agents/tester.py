@@ -33,6 +33,8 @@ async def check_post(post: str, style_profile: dict) -> dict:
             {"role": "user", "content": f"Профиль стиля:\n{profile_str}\n\nПост для проверки:\n{post}"},
         ],
     )
-    result = json.loads(response.choices[0].message.content)
+    content = response.choices[0].message.content or ""
+    content = content.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+    result = json.loads(content)
     result["approved"] = result["score"] >= PASS_THRESHOLD
     return result

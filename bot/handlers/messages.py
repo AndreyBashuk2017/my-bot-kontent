@@ -30,14 +30,22 @@ async def handle_document(message: Message, bot: Bot):
     await bot.download(doc, destination=str(dest))
 
     content = dest.read_text(encoding="utf-8")
-    posts = parse_json_export(content) if doc.file_name.endswith(".json") else parse_md_export(content)
+    try:
+        posts = parse_json_export(content) if doc.file_name.endswith(".json") else parse_md_export(content)
+    except Exception:
+        await message.answer("Не удалось прочитать файл — он повреждён или не завершён. Дождись окончания экспорта и загрузи снова.")
+        return
 
     if not posts:
         await message.answer("Постов не найдено в файле.")
         return
 
     await message.answer(f"Найдено {len(posts)} постов. Извлекаю стиль...")
-    profile = await extract_style_patterns(posts)
+    try:
+        profile = await extract_style_patterns(posts)
+    except Exception as e:
+        await message.answer(f"Ошибка при обращении к AI: {e}")
+        return
     write_style_profile(profile)
     await message.answer(
         f"Профиль стиля сохранён.\nТон: {profile.get('tone')}, средняя длина: {profile.get('avg_length')} символов."

@@ -21,7 +21,7 @@ STYLE_EXTRACTION_PROMPT = """Ты аналитик текстового стил
 
 
 async def extract_style_patterns(posts: list[str]) -> dict:
-    posts_text = "\n---\n".join(posts[:50])
+    posts_text = "\n---\n".join(posts[:20])
     response = await openai_client.chat.completions.create(
         model="anthropic/claude-sonnet-4-6",
         max_tokens=1024,
@@ -31,7 +31,9 @@ async def extract_style_patterns(posts: list[str]) -> dict:
             {"role": "user", "content": f"Посты автора:\n{posts_text}"},
         ],
     )
-    return json.loads(response.choices[0].message.content)
+    content = response.choices[0].message.content or ""
+    content = content.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+    return json.loads(content)
 
 
 def parse_json_export(content: str) -> list[str]:
