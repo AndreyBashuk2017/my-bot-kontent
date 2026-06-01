@@ -1,9 +1,7 @@
-import urllib.parse
+import base64
 import httpx
 from bot.agents.client import chat
-
-POLLINATIONS_URL = "https://image.pollinations.ai/prompt/{prompt}?width=1280&height=720&nologo=true&model=flux"
-HEADERS = {"User-Agent": "Mozilla/5.0"}
+from bot.config import OPENROUTER_API_KEY, OPENROUTER_BASE_URL
 
 IMAGE_PROMPT_SYSTEM = """Create a short English image generation prompt based on the post topic.
 Style: professional photography, realistic, 16:9 landscape.
@@ -23,10 +21,23 @@ async def _make_prompt(post_text: str) -> str:
 
 async def generate_image(post_text: str) -> bytes:
     prompt = await _make_prompt(post_text)
-    encoded = urllib.parse.quote(prompt)
-    url = POLLINATIONS_URL.format(prompt=encoded)
-
-    async with httpx.AsyncClient(timeout=90, follow_redirects=True, headers=HEADERS) as client:
-        resp = await client.get(url)
+    async with httpx.AsyncClient(timeout=60) as client:
+        resp = await client.post(
+            f"{OPENROUTER_BASE_URL}/chat/completions",
+            headers={"Authorization": f"Bearer {OPENROUTER_API_KEY}"},
+            json={
+                "model": "google/gemini-2.5-flash-image",
+                "max_tokens": 100,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+        )
         resp.raise_for_status()
-        return resp.content
+        data = resp.json()
+
+    images = data["choices"][0]["message"].get("images", [])
+    if not images:
+        raise ValueError("Модель не вернула изображение")
+
+    data_url = images[0]["image_url"]["url"]
+    base64_data = data_url.split(",", 1)[1]
+    return base64.b64decode(base64_data)
