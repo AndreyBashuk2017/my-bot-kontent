@@ -5,6 +5,7 @@ from aiogram import Bot, Dispatcher
 from bot.config import BOT_TOKEN
 from bot.handlers.commands import router as commands_router
 from bot.handlers.messages import router as messages_router
+from bot.handlers.callbacks import router as callbacks_router
 
 logging.basicConfig(level=logging.INFO)
 
@@ -12,6 +13,7 @@ logging.basicConfig(level=logging.INFO)
 async def main():
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
+    dp.include_router(callbacks_router)
     dp.include_router(commands_router)
     dp.include_router(messages_router)
     await dp.start_polling(bot)

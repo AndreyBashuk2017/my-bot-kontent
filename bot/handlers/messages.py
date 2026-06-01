@@ -7,6 +7,7 @@ from bot.agents.orchestrator import detect_intent, write_post, edit_post
 from bot.agents.decomposer import extract_style_patterns, parse_json_export, parse_md_export
 from bot.storage.style_profile import read_style_profile, write_style_profile
 from bot.state import pending_edit
+from bot.handlers.commands import image_keyboard
 
 router = Router()
 
@@ -71,7 +72,7 @@ async def handle_text(message: Message):
             await message.answer(f"Ошибка редактирования: {e}")
             return
         note = "" if result["check"]["approved"] else f"\n\n⚠️ Оценка: {result['check']['score']}/10"
-        await message.answer(result["text"] + note)
+        await message.answer(result["text"] + note, reply_markup=image_keyboard(result["text"]))
         return
 
     try:
@@ -92,7 +93,7 @@ async def handle_text(message: Message):
             await message.answer(f"Ошибка генерации: {e}")
             return
         note = "" if result["check"]["approved"] else f"\n\n⚠️ Оценка: {result['check']['score']}/10"
-        await message.answer(result["text"] + note)
+        await message.answer(result["text"] + note, reply_markup=image_keyboard(result["text"]))
 
     elif intent == "edit":
         pending_edit[user_id] = True

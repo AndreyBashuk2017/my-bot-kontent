@@ -1,13 +1,22 @@
+import uuid
 from aiogram import Router
 from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
 from bot.config import ALLOWED_USER_ID
 from bot.agents.orchestrator import write_post
 from bot.agents.architect import create_content_plan, suggest_topics
-from bot.state import pending_edit
+from bot.state import pending_edit, post_cache
 from bot.storage.style_profile import read_style_profile
 from bot.storage.content_plan import read_content_plan, write_content_plan
+
+
+def image_keyboard(post_text: str) -> InlineKeyboardMarkup:
+    key = str(uuid.uuid4())[:8]
+    post_cache[key] = post_text
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="🖼 Картинка", callback_data=f"img:{key}")
+    ]])
 
 router = Router()
 
@@ -97,7 +106,7 @@ async def cmd_write(message: Message):
         await message.answer(f"Ошибка генерации: {e}")
         return
     note = "" if result["check"]["approved"] else f"\n\n⚠️ Оценка: {result['check']['score']}/10"
-    await message.answer(result["text"] + note)
+    await message.answer(result["text"] + note, reply_markup=image_keyboard(result["text"]))
 
 
 @router.message(Command("edit"))
