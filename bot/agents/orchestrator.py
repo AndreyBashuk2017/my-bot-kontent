@@ -55,6 +55,19 @@ async def write_post(brief: str, style_profile: dict) -> dict:
     return best
 
 
+async def refine_post(post_text: str, instruction: str, style_profile: dict) -> str:
+    """Single-pass quick refinement — no scoring loop."""
+    profile_str = json.dumps(style_profile, ensure_ascii=False)
+    return await chat(
+        messages=[
+            {"role": "system", "content": WRITER_SYSTEM + f"\n\nПрофиль стиля автора:\n{profile_str}"},
+            {"role": "user", "content": f"Вот пост:\n\n{post_text}\n\nЗадание: {instruction}\n\nВерни только готовый текст поста."},
+        ],
+        max_tokens=700,
+        temperature=0.5,
+    )
+
+
 async def edit_post(original: str, instructions: str, style_profile: dict) -> dict:
     profile_str = json.dumps(style_profile, ensure_ascii=False)
     best = None

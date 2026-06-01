@@ -4,9 +4,27 @@ from aiogram.types import CallbackQuery, BufferedInputFile
 from bot.config import ALLOWED_USER_ID
 from bot.state import post_cache, pending_trends, trends_cache
 from bot.agents.image_generator import generate_image
-from bot.agents.orchestrator import write_post
+from bot.agents.orchestrator import write_post, refine_post
 from bot.storage.style_profile import read_style_profile
-from bot.handlers.commands import image_keyboard, TRENDS_SUBMENU
+from bot.handlers.commands import post_keyboard, TRENDS_SUBMENU
+
+_PA_INSTRUCTIONS = {
+    "short": "Сделай текст короче на 30-40%. Убери воду, оставь только суть и хлёсткие факты.",
+    "long":  "Расширь текст на 30-40%. Добавь конкретики, примеров, цифр. Сохрани стиль.",
+    "human": "Сделай живее и человечнее. Убери AI-штампы, добавь разговорных оборотов.",
+    "punch": "Сделай хлёстче и резче. Прямее, ударнее, без воды и общих слов.",
+    "gram":  "Исправь только грамматику, орфографию и пунктуацию. Содержание не трогай.",
+    "regen": "Полностью перепиши заново на ту же тему. Другая структура, другой заход, тот же стиль.",
+}
+
+_PA_WAIT = {
+    "short": "✂️ Делаю короче...",
+    "long":  "📝 Делаю длиннее...",
+    "human": "🤩 Делаю человечнее...",
+    "punch": "🌶 Делаю хлёстче...",
+    "gram":  "✏️ Правлю грамматику...",
+    "regen": "🔄 Перегенерирую...",
+}
 
 router = Router()
 
@@ -110,4 +128,48 @@ async def handle_write_trend(callback: CallbackQuery):
         return
 
     note = "" if result["check"]["approved"] else f"\n\n⚠️ Оценка: {result['check']['score']}/10"
-    await callback.message.answer(result["text"] + note, reply_markup=image_keyboard(result["text"]))
+    await callback.message.answer(result["text"] + note, reply_markup=post_keyboard(result["text"]))
+
+
+# ── post action buttons ───────────────────────────────────────────────────────
+
+@router.callback_query(lambda c: c.data and c.data.startswith("pa:"))
+async def handle_post_action(callback: CallbackQuery):
+    if not _auth(callback):
+        await callback.answer()
+        return
+
+    parts = callback.data.split(":")
+    action, key = parts[1], parts[2]
+
+    if action == "done":
+        await callback.answer("✅ Готово!")
+        await callback.message.edit_reply_markup(reply_markup=None)
+        return
+
+    post_text = post_cache.get(key)
+    if not post_text:
+        await callback.answer("Пост не найден, сгенерируй заново.")
+        return
+
+    instruction = _PA_INSTRUCTIONS.get(action)
+    if not instruction:
+        await callback.answer()
+        return
+
+    wait_msg = _PA_WAIT.get(action, "Обрабатываю...")
+    await callback.answer(wait_msg)
+    await callback.message.answer(wait_msg)
+
+    profile = read_style_profile()
+    if not profile:
+        await callback.message.answer("Профиль стиля не загружен.")
+        return
+
+    try:
+        new_text = await refine_post(post_text, instruction, profile)
+    except Exception as e:
+        await callback.message.answer(f"Ошибка: {e}")
+        return
+
+    await callback.message.answer(new_text, reply_markup=post_keyboard(new_text))

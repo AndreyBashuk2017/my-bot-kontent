@@ -14,12 +14,27 @@ from bot.storage.style_profile import read_style_profile
 from bot.storage.content_plan import read_content_plan, write_content_plan
 
 
-def image_keyboard(post_text: str) -> InlineKeyboardMarkup:
+def post_keyboard(post_text: str) -> InlineKeyboardMarkup:
     key = str(uuid.uuid4())[:8]
     post_cache[key] = post_text
-    return InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text="🖼 Картинка", callback_data=f"img:{key}")
-    ]])
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✂️ Короче",     callback_data=f"pa:short:{key}"),
+            InlineKeyboardButton(text="📝 Длиннее",    callback_data=f"pa:long:{key}"),
+        ],
+        [
+            InlineKeyboardButton(text="🤩 Человечнее", callback_data=f"pa:human:{key}"),
+            InlineKeyboardButton(text="🌶 Хлёстче",    callback_data=f"pa:punch:{key}"),
+        ],
+        [
+            InlineKeyboardButton(text="✏️ Грамматика", callback_data=f"pa:gram:{key}"),
+            InlineKeyboardButton(text="🔄 Перегенерировать", callback_data=f"pa:regen:{key}"),
+        ],
+        [
+            InlineKeyboardButton(text="🖼 Картинка",   callback_data=f"img:{key}"),
+            InlineKeyboardButton(text="✅ Готово",      callback_data=f"pa:done:{key}"),
+        ],
+    ])
 
 
 MAIN_KEYBOARD = ReplyKeyboardMarkup(
@@ -129,7 +144,7 @@ async def cmd_write(message: Message):
         await message.answer(f"Ошибка генерации: {e}")
         return
     note = "" if result["check"]["approved"] else f"\n\n⚠️ Оценка: {result['check']['score']}/10"
-    await message.answer(result["text"] + note, reply_markup=image_keyboard(result["text"]))
+    await message.answer(result["text"] + note, reply_markup=post_keyboard(result["text"]))
 
 
 @router.message(Command("edit"))

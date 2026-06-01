@@ -12,7 +12,7 @@ from bot.agents.trendscout import search_by_niche, search_by_topic, DEFAULT_NICH
 from bot.storage.style_profile import read_style_profile, write_style_profile
 from bot.storage.content_plan import read_content_plan, write_content_plan
 from bot.state import pending_edit, pending_write, pending_trends, trends_cache
-from bot.handlers.commands import image_keyboard, TRENDS_SUBMENU
+from bot.handlers.commands import post_keyboard, TRENDS_SUBMENU
 
 router = Router()
 
@@ -205,7 +205,7 @@ async def handle_text(message: Message):
             await message.answer(f"Ошибка генерации: {e}")
             return
         note = "" if result["check"]["approved"] else f"\n\n⚠️ Оценка: {result['check']['score']}/10"
-        await message.answer(result["text"] + note, reply_markup=image_keyboard(result["text"]))
+        await message.answer(result["text"] + note, reply_markup=post_keyboard(result["text"]))
         return
 
     if pending_edit.get(user_id):
@@ -221,7 +221,7 @@ async def handle_text(message: Message):
             await message.answer(f"Ошибка редактирования: {e}")
             return
         note = "" if result["check"]["approved"] else f"\n\n⚠️ Оценка: {result['check']['score']}/10"
-        await message.answer(result["text"] + note, reply_markup=image_keyboard(result["text"]))
+        await message.answer(result["text"] + note, reply_markup=post_keyboard(result["text"]))
         return
 
     try:
@@ -242,7 +242,7 @@ async def handle_text(message: Message):
             await message.answer(f"Ошибка генерации: {e}")
             return
         note = "" if result["check"]["approved"] else f"\n\n⚠️ Оценка: {result['check']['score']}/10"
-        await message.answer(result["text"] + note, reply_markup=image_keyboard(result["text"]))
+        await message.answer(result["text"] + note, reply_markup=post_keyboard(result["text"]))
 
     elif intent == "edit":
         pending_edit[user_id] = True
