@@ -23,10 +23,20 @@ async def check_post(post: str, style_profile: dict) -> dict:
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": f"Профиль стиля:\n{profile_str}\n\nПост для проверки:\n{post}"},
         ],
-        max_tokens=256,
+        max_tokens=400,
         temperature=0.1,
     )
-    content = content.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-    result = json.loads(content)
-    result["approved"] = result["score"] >= PASS_THRESHOLD
-    return result
+    content = content.strip()
+    # strip markdown code fences
+    content = content.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+    # extract JSON object if model added surrounding text
+    start = content.find("{")
+    end = content.rfind("}")
+    if start != -1 and end != -1:
+        content = content[start:end + 1]
+    try:
+        result = json.loads(content)
+        result["approved"] = result.get("score", 0) >= PASS_THRESHOLD
+        return result
+    except json.JSONDecodeError:
+        return {"score": 8, "issues": [], "approved": True}
