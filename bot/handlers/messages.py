@@ -8,7 +8,7 @@ from bot.config import ALLOWED_USER_ID, EXAMPLES_DIR
 from bot.agents.orchestrator import detect_intent, write_post, edit_post
 from bot.agents.architect import create_content_plan, suggest_topics
 from bot.agents.decomposer import extract_style_patterns, parse_json_export, parse_md_export
-from bot.agents.trendscout import search_by_niche, search_by_topic
+from bot.agents.trendscout import search_by_niche, search_by_topic, DEFAULT_NICHE
 from bot.storage.style_profile import read_style_profile, write_style_profile
 from bot.storage.content_plan import read_content_plan, write_content_plan
 from bot.state import pending_edit, pending_write, pending_trends, trends_cache
@@ -73,7 +73,40 @@ async def handle_text(message: Message):
         return
 
     if message.text == "🔥 Тренды":
-        await message.answer("Выбери режим поиска:", reply_markup=TRENDS_SUBMENU)
+        await message.answer(f"🔍 Ищу тренды в нише «{DEFAULT_NICHE}»...")
+        try:
+            trends = await search_by_niche(DEFAULT_NICHE)
+        except Exception as e:
+            err = str(e)
+            if "402" in err or "credits" in err.lower():
+                await message.answer(
+                    "Для поиска трендов нужны кредиты OpenRouter.\n"
+                    "Пополни баланс на openrouter.ai/settings/credits (хватит $1)."
+                )
+            else:
+                await message.answer(f"Ошибка поиска трендов: {e}")
+            return
+
+        topics = trends.get("topics", [])
+        gt_terms = trends.get("trending_searches", [])
+
+        if not topics:
+            await message.answer("Не удалось найти тренды. Попробуй позже.")
+            return
+
+        key = str(uuid.uuid4())[:8]
+        trends_cache[key] = trends
+
+        gt_line = ""
+        if gt_terms:
+            gt_line = f"📊 <b>Google Trends Россия:</b>\n{', '.join(gt_terms[:4])}\n\n"
+
+        text = gt_line + "🔥 <b>Трендовые темы:</b>\n\n" + "\n".join(f"{i+1}. {t}" for i, t in enumerate(topics))
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(text=f"✍️ Пост {i+1}", callback_data=f"tw:{key}:{i}")
+            for i in range(len(topics))
+        ]])
+        await message.answer(text, parse_mode="HTML", reply_markup=keyboard)
         return
 
     if message.text == "✏️ Редактировать":
