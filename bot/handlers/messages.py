@@ -6,7 +6,7 @@ from bot.config import ALLOWED_USER_ID, EXAMPLES_DIR
 from bot.agents.orchestrator import detect_intent, write_post, edit_post
 from bot.agents.decomposer import extract_style_patterns, parse_json_export, parse_md_export
 from bot.storage.style_profile import read_style_profile, write_style_profile
-from bot.state import pending_edit
+from bot.state import pending_edit, pending_write
 from bot.handlers.commands import image_keyboard
 
 router = Router()
@@ -59,6 +59,23 @@ async def handle_text(message: Message):
         return
 
     user_id = message.from_user.id
+
+    if pending_write.get(user_id):
+        pending_write[user_id] = False
+        profile = read_style_profile()
+        if not profile:
+            await message.answer("Сначала загрузи примеры стиля через /upload.")
+            return
+        await message.answer("Пишу...")
+        try:
+            result = await write_post(message.text, profile)
+        except Exception as e:
+            await message.answer(f"Ошибка генерации: {e}")
+            return
+        note = "" if result["check"]["approved"] else f"\n\n⚠️ Оценка: {result['check']['score']}/10"
+        await message.answer(result["text"] + note, reply_markup=image_keyboard(result["text"]))
+        return
+
     if pending_edit.get(user_id):
         pending_edit[user_id] = False
         profile = read_style_profile()

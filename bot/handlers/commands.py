@@ -6,7 +6,7 @@ from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from bot.config import ALLOWED_USER_ID
 from bot.agents.orchestrator import write_post
 from bot.agents.architect import create_content_plan, suggest_topics
-from bot.state import pending_edit, post_cache
+from bot.state import pending_edit, pending_write, post_cache
 from bot.storage.style_profile import read_style_profile
 from bot.storage.content_plan import read_content_plan, write_content_plan
 
@@ -93,7 +93,8 @@ async def cmd_write(message: Message):
         return
     brief = message.text.removeprefix("/write").strip()
     if not brief:
-        await message.answer("Укажи тему: /write [тема]")
+        pending_write[message.from_user.id] = True
+        await message.answer("Напиши тему поста:")
         return
     profile = read_style_profile()
     if not profile:
