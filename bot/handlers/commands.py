@@ -1,7 +1,10 @@
 import uuid
 from aiogram import Router
 from aiogram.filters import Command
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import (
+    Message, InlineKeyboardMarkup, InlineKeyboardButton,
+    ReplyKeyboardMarkup, KeyboardButton,
+)
 
 from bot.config import ALLOWED_USER_ID
 from bot.agents.orchestrator import write_post
@@ -17,6 +20,18 @@ def image_keyboard(post_text: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[[
         InlineKeyboardButton(text="🖼 Картинка", callback_data=f"img:{key}")
     ]])
+
+
+MAIN_KEYBOARD = ReplyKeyboardMarkup(
+    keyboard=[[KeyboardButton(text="🔥 Тренды")]],
+    resize_keyboard=True,
+    is_persistent=True,
+)
+
+TRENDS_SUBMENU = InlineKeyboardMarkup(inline_keyboard=[[
+    InlineKeyboardButton(text="🎯 По нише", callback_data="tn"),
+    InlineKeyboardButton(text="📌 По теме", callback_data="tt"),
+]])
 
 router = Router()
 
@@ -36,8 +51,10 @@ async def cmd_start(message: Message):
         "/plan — текущий контент-план\n"
         "/newplan — создать новый план\n"
         "/write [тема] — написать пост\n"
-        "/edit — отредактировать текст (отправь следом)\n\n"
-        "Или просто напиши что нужно — разберусь."
+        "/edit — отредактировать текст (отправь следом)\n"
+        "/trends — найти трендовые темы\n\n"
+        "Или просто напиши что нужно — разберусь.",
+        reply_markup=MAIN_KEYBOARD,
     )
 
 
@@ -123,3 +140,10 @@ async def cmd_upload(message: Message):
     if not auth(message):
         return
     await message.answer("Отправь файл (MD или JSON) — выгрузку своего Telegram-канала.")
+
+
+@router.message(Command("trends"))
+async def cmd_trends(message: Message):
+    if not auth(message):
+        return
+    await message.answer("Выбери режим поиска:", reply_markup=TRENDS_SUBMENU)

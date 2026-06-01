@@ -1,13 +1,15 @@
+import uuid
 from aiogram import Bot, Router, F
-from aiogram.types import Message, Document
+from aiogram.types import Message, Document, InlineKeyboardMarkup, InlineKeyboardButton
 from pathlib import Path
 
 from bot.config import ALLOWED_USER_ID, EXAMPLES_DIR
 from bot.agents.orchestrator import detect_intent, write_post, edit_post
 from bot.agents.decomposer import extract_style_patterns, parse_json_export, parse_md_export
+from bot.agents.trendscout import search_by_niche, search_by_topic
 from bot.storage.style_profile import read_style_profile, write_style_profile
-from bot.state import pending_edit, pending_write
-from bot.handlers.commands import image_keyboard
+from bot.state import pending_edit, pending_write, pending_trends, trends_cache
+from bot.handlers.commands import image_keyboard, TRENDS_SUBMENU
 
 router = Router()
 
@@ -59,6 +61,46 @@ async def handle_text(message: Message):
         return
 
     user_id = message.from_user.id
+
+    # Main menu "Тренды" button
+    if message.text == "🔥 Тренды":
+        await message.answer("Выбери режим поиска:", reply_markup=TRENDS_SUBMENU)
+        return
+
+    # Awaiting niche/topic input after user chose a search mode
+    if pending_trends.get(user_id):
+        mode = pending_trends.pop(user_id)
+        await message.answer("🔍 Ищу тренды...")
+        try:
+            if mode == "niche":
+                trends = await search_by_niche(message.text)
+            else:
+                trends = await search_by_topic(message.text)
+        except Exception as e:
+            err = str(e)
+            if "402" in err or "credits" in err.lower():
+                await message.answer(
+                    "Для поиска трендов нужны кредиты OpenRouter.\n"
+                    "Пополни баланс на openrouter.ai/settings/credits (хватит $1)."
+                )
+            else:
+                await message.answer(f"Ошибка поиска трендов: {e}")
+            return
+
+        if not trends:
+            await message.answer("Не удалось найти тренды. Попробуй другой запрос.")
+            return
+
+        key = str(uuid.uuid4())[:8]
+        trends_cache[key] = trends
+
+        text = "🔥 Трендовые темы:\n\n" + "\n".join(f"{i+1}. {t}" for i, t in enumerate(trends))
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(text=f"✍️ Пост {i+1}", callback_data=f"tw:{key}:{i}")
+            for i in range(len(trends))
+        ]])
+        await message.answer(text, reply_markup=keyboard)
+        return
 
     if pending_write.get(user_id):
         pending_write[user_id] = False
@@ -121,5 +163,5 @@ async def handle_text(message: Message):
             "Не понял запрос. Попробуй:\n"
             "— /write <тема>\n"
             "— /edit (и отправь текст)\n"
-            "— /plan, /newplan, /upload, /style"
+            "— /plan, /newplan, /upload, /style, /trends"
         )
