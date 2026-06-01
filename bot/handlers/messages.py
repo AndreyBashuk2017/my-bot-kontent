@@ -137,19 +137,26 @@ async def handle_text(message: Message):
                 await message.answer(f"Ошибка поиска трендов: {e}")
             return
 
-        if not trends:
+        topics = trends.get("topics", [])
+        gt_terms = trends.get("trending_searches", [])
+
+        if not topics:
             await message.answer("Не удалось найти тренды. Попробуй другой запрос.")
             return
 
         key = str(uuid.uuid4())[:8]
         trends_cache[key] = trends
 
-        text = "🔥 Трендовые темы:\n\n" + "\n".join(f"{i+1}. {t}" for i, t in enumerate(trends))
+        gt_line = ""
+        if gt_terms:
+            gt_line = f"📊 <b>Google Trends Россия:</b>\n{', '.join(gt_terms[:4])}\n\n"
+
+        text = gt_line + "🔥 <b>Трендовые темы:</b>\n\n" + "\n".join(f"{i+1}. {t}" for i, t in enumerate(topics))
         keyboard = InlineKeyboardMarkup(inline_keyboard=[[
             InlineKeyboardButton(text=f"✍️ Пост {i+1}", callback_data=f"tw:{key}:{i}")
-            for i in range(len(trends))
+            for i in range(len(topics))
         ]])
-        await message.answer(text, reply_markup=keyboard)
+        await message.answer(text, parse_mode="HTML", reply_markup=keyboard)
         return
 
     if pending_write.get(user_id):

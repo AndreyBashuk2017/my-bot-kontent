@@ -84,12 +84,17 @@ async def handle_write_trend(callback: CallbackQuery):
 
     parts = callback.data.split(":")
     key, idx = parts[1], int(parts[2])
-    trends = trends_cache.get(key)
-    if not trends or idx >= len(trends):
+    result = trends_cache.get(key)
+    if not result:
         await callback.answer("Темы устарели — поищи заново.")
         return
 
-    topic = trends[idx]
+    topics = result["topics"] if isinstance(result, dict) else result
+    if idx >= len(topics):
+        await callback.answer("Тема не найдена — поищи заново.")
+        return
+
+    topic = topics[idx]
     await callback.answer("Пишу...")
     await callback.message.answer(f"Пишу пост по теме:\n{topic}")
 
