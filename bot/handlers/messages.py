@@ -1,3 +1,4 @@
+import json
 import uuid
 from aiogram import Bot, Router, F
 from aiogram.types import Message, Document, InlineKeyboardMarkup, InlineKeyboardButton
@@ -5,9 +6,11 @@ from pathlib import Path
 
 from bot.config import ALLOWED_USER_ID, EXAMPLES_DIR
 from bot.agents.orchestrator import detect_intent, write_post, edit_post
+from bot.agents.architect import create_content_plan, suggest_topics
 from bot.agents.decomposer import extract_style_patterns, parse_json_export, parse_md_export
 from bot.agents.trendscout import search_by_niche, search_by_topic
 from bot.storage.style_profile import read_style_profile, write_style_profile
+from bot.storage.content_plan import read_content_plan, write_content_plan
 from bot.state import pending_edit, pending_write, pending_trends, trends_cache
 from bot.handlers.commands import image_keyboard, TRENDS_SUBMENU
 
@@ -62,9 +65,56 @@ async def handle_text(message: Message):
 
     user_id = message.from_user.id
 
-    # Main menu "Тренды" button
+    # ── Main keyboard buttons ──────────────────────────────────────────────────
+
+    if message.text == "✍️ Написать пост":
+        pending_write[user_id] = True
+        await message.answer("Напиши тему поста:")
+        return
+
     if message.text == "🔥 Тренды":
         await message.answer("Выбери режим поиска:", reply_markup=TRENDS_SUBMENU)
+        return
+
+    if message.text == "✏️ Редактировать":
+        pending_edit[user_id] = True
+        await message.answer("Отправь текст, который нужно отредактировать.")
+        return
+
+    if message.text == "📋 Контент-план":
+        plan = read_content_plan()
+        if not plan:
+            await message.answer("Контент-плана пока нет. Нажми «🆕 Новый план».")
+        else:
+            await message.answer(plan)
+        return
+
+    if message.text == "🆕 Новый план":
+        profile = read_style_profile()
+        if not profile:
+            await message.answer("Сначала загрузи примеры стиля через /upload.")
+            return
+        await message.answer("Генерирую темы...")
+        try:
+            topics = await suggest_topics(profile, n=10)
+            await message.answer("Составляю план...")
+            plan = await create_content_plan(profile, topics)
+        except Exception as e:
+            await message.answer(f"Ошибка генерации плана: {e}")
+            return
+        write_content_plan(plan)
+        await message.answer(f"Контент-план готов:\n\n{plan}")
+        return
+
+    if message.text == "📊 Мой стиль":
+        profile = read_style_profile()
+        if not profile:
+            await message.answer("Профиль стиля не загружен. Используй /upload.")
+        else:
+            await message.answer(
+                f"<pre>{json.dumps(profile, ensure_ascii=False, indent=2)}</pre>",
+                parse_mode="HTML",
+            )
         return
 
     # Awaiting niche/topic input after user chose a search mode

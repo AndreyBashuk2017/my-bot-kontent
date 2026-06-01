@@ -23,7 +23,11 @@ def image_keyboard(post_text: str) -> InlineKeyboardMarkup:
 
 
 MAIN_KEYBOARD = ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton(text="🔥 Тренды")]],
+    keyboard=[
+        [KeyboardButton(text="✍️ Написать пост"), KeyboardButton(text="🔥 Тренды")],
+        [KeyboardButton(text="✏️ Редактировать"), KeyboardButton(text="📋 Контент-план")],
+        [KeyboardButton(text="🆕 Новый план"),    KeyboardButton(text="📊 Мой стиль")],
+    ],
     resize_keyboard=True,
     is_persistent=True,
 )
@@ -45,15 +49,16 @@ async def cmd_start(message: Message):
     if not auth(message):
         return
     await message.answer(
-        "Привет! Я твой копирайтер.\n\n"
-        "/upload — загрузи выгрузку канала (MD или JSON)\n"
-        "/style — посмотри профиль стиля\n"
-        "/plan — текущий контент-план\n"
-        "/newplan — создать новый план\n"
-        "/write [тема] — написать пост\n"
-        "/edit — отредактировать текст (отправь следом)\n"
-        "/trends — найти трендовые темы\n\n"
-        "Или просто напиши что нужно — разберусь.",
+        "Привет! Я твой копирайтер 👋\n\n"
+        "Используй кнопки внизу или команды:\n\n"
+        "✍️ <b>Написать пост</b> — пишу пост по теме\n"
+        "🔥 <b>Тренды</b> — ищу трендовые темы через Perplexity\n"
+        "✏️ <b>Редактировать</b> — улучшаю твой текст\n"
+        "📋 <b>Контент-план</b> — текущий план\n"
+        "🆕 <b>Новый план</b> — генерирую план на 10 тем\n"
+        "📊 <b>Мой стиль</b> — профиль стиля канала\n\n"
+        "Для первого запуска загрузи выгрузку канала: /upload",
+        parse_mode="HTML",
         reply_markup=MAIN_KEYBOARD,
     )
 
