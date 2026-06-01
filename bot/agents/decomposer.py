@@ -1,12 +1,6 @@
 import json
 import re
-import openai
-from bot.config import OPENROUTER_API_KEY, OPENROUTER_BASE_URL
-
-openai_client = openai.AsyncOpenAI(
-    api_key=OPENROUTER_API_KEY,
-    base_url=OPENROUTER_BASE_URL,
-)
+from bot.agents.client import chat
 
 STYLE_EXTRACTION_PROMPT = """Ты аналитик текстового стиля. Проанализируй посты автора и извлеки паттерны стиля.
 
@@ -22,16 +16,14 @@ STYLE_EXTRACTION_PROMPT = """Ты аналитик текстового стил
 
 async def extract_style_patterns(posts: list[str]) -> dict:
     posts_text = "\n---\n".join(posts[:20])
-    response = await openai_client.chat.completions.create(
-        model="anthropic/claude-haiku-4-5",
-        max_tokens=1024,
-        temperature=0.3,
+    content = await chat(
         messages=[
             {"role": "system", "content": STYLE_EXTRACTION_PROMPT},
             {"role": "user", "content": f"Посты автора:\n{posts_text}"},
         ],
+        max_tokens=1024,
+        temperature=0.3,
     )
-    content = response.choices[0].message.content or ""
     content = content.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
     return json.loads(content)
 

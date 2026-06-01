@@ -1,12 +1,6 @@
 import json
-import openai
-from bot.config import OPENROUTER_API_KEY, OPENROUTER_BASE_URL
+from bot.agents.client import chat
 from bot.agents.tester import check_post
-
-openai_client = openai.AsyncOpenAI(
-    api_key=OPENROUTER_API_KEY,
-    base_url=OPENROUTER_BASE_URL,
-)
 
 MAX_RETRIES = 2
 
@@ -24,16 +18,15 @@ WRITER_SYSTEM = """Ты копирайтер Telegram-канала. Ты пиш�
 
 
 async def detect_intent(user_message: str) -> str:
-    response = await openai_client.chat.completions.create(
-        model="anthropic/claude-haiku-4-5",
-        max_tokens=10,
-        temperature=0.2,
+    result = await chat(
         messages=[
             {"role": "system", "content": INTENT_SYSTEM},
             {"role": "user", "content": user_message},
         ],
+        max_tokens=10,
+        temperature=0.2,
     )
-    return response.choices[0].message.content.strip().lower()
+    return result.lower()
 
 
 async def write_post(brief: str, style_profile: dict) -> dict:
@@ -45,16 +38,14 @@ async def write_post(brief: str, style_profile: dict) -> dict:
         if best and not best["check"]["approved"]:
             issues_hint = "\n\nПредыдущая версия получила замечания: " + ", ".join(best["check"]["issues"]) + ". Исправь их."
 
-        response = await openai_client.chat.completions.create(
-            model="anthropic/claude-haiku-4-5",
-            max_tokens=600,
-            temperature=0.2,
+        post_text = await chat(
             messages=[
                 {"role": "system", "content": WRITER_SYSTEM + f"\n\nПрофиль стиля автора:\n{profile_str}"},
                 {"role": "user", "content": f"Напиши пост на тему: {brief}{issues_hint}"},
             ],
+            max_tokens=600,
+            temperature=0.2,
         )
-        post_text = response.choices[0].message.content.strip()
         check = await check_post(post_text, style_profile)
         best = {"text": post_text, "check": check, "approved": check["approved"]}
 
@@ -73,16 +64,14 @@ async def edit_post(original: str, instructions: str, style_profile: dict) -> di
         if best and not best["check"]["approved"]:
             issues_hint = "\n\nЗамечания: " + ", ".join(best["check"]["issues"]) + ". Исправь."
 
-        response = await openai_client.chat.completions.create(
-            model="anthropic/claude-haiku-4-5",
-            max_tokens=600,
-            temperature=0.2,
+        post_text = await chat(
             messages=[
                 {"role": "system", "content": WRITER_SYSTEM + f"\n\nПрофиль стиля автора:\n{profile_str}"},
                 {"role": "user", "content": f"Оригинал:\n{original}\n\nЗадание: {instructions}{issues_hint}"},
             ],
+            max_tokens=600,
+            temperature=0.2,
         )
-        post_text = response.choices[0].message.content.strip()
         check = await check_post(post_text, style_profile)
         best = {"text": post_text, "check": check, "approved": check["approved"]}
 

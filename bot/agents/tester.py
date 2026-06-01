@@ -1,11 +1,5 @@
 import json
-import openai
-from bot.config import OPENROUTER_API_KEY, OPENROUTER_BASE_URL
-
-openai_client = openai.AsyncOpenAI(
-    api_key=OPENROUTER_API_KEY,
-    base_url=OPENROUTER_BASE_URL,
-)
+from bot.agents.client import chat
 
 PASS_THRESHOLD = 7
 
@@ -24,16 +18,14 @@ SYSTEM_PROMPT = """Ты строгий редактор Telegram-канала. �
 
 async def check_post(post: str, style_profile: dict) -> dict:
     profile_str = json.dumps(style_profile, ensure_ascii=False)
-    response = await openai_client.chat.completions.create(
-        model="anthropic/claude-haiku-4-5",
-        max_tokens=256,
-        temperature=0.1,
+    content = await chat(
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": f"Профиль стиля:\n{profile_str}\n\nПост для проверки:\n{post}"},
         ],
+        max_tokens=256,
+        temperature=0.1,
     )
-    content = response.choices[0].message.content or ""
     content = content.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
     result = json.loads(content)
     result["approved"] = result["score"] >= PASS_THRESHOLD

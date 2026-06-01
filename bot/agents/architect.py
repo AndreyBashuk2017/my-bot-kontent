@@ -1,11 +1,5 @@
 import json
-import openai
-from bot.config import OPENROUTER_API_KEY, OPENROUTER_BASE_URL
-
-openai_client = openai.AsyncOpenAI(
-    api_key=OPENROUTER_API_KEY,
-    base_url=OPENROUTER_BASE_URL,
-)
+from bot.agents.client import chat
 
 ARCHITECT_SYSTEM = """Ты контент-стратег Telegram-канала. Ты помогаешь планировать контент в стиле автора.
 Будь конкретен: реальные темы, реальные форматы. Без воды."""
@@ -13,16 +7,15 @@ ARCHITECT_SYSTEM = """Ты контент-стратег Telegram-канала. 
 
 async def suggest_topics(style_profile: dict, n: int = 5) -> list[str]:
     profile_str = json.dumps(style_profile, ensure_ascii=False)
-    response = await openai_client.chat.completions.create(
-        model="anthropic/claude-haiku-4-5",
-        max_tokens=512,
-        temperature=0.5,
+    content = await chat(
         messages=[
             {"role": "system", "content": ARCHITECT_SYSTEM},
             {"role": "user", "content": f"Профиль стиля автора:\n{profile_str}\n\nПредложи {n} тем для постов. Каждая тема — одна строка с номером."},
         ],
+        max_tokens=512,
+        temperature=0.5,
     )
-    lines = response.choices[0].message.content.strip().splitlines()
+    lines = content.splitlines()
     topics = []
     for line in lines:
         line = line.strip()
@@ -35,13 +28,11 @@ async def suggest_topics(style_profile: dict, n: int = 5) -> list[str]:
 async def create_content_plan(style_profile: dict, topics: list[str]) -> str:
     profile_str = json.dumps(style_profile, ensure_ascii=False)
     topics_str = "\n".join(f"- {t}" for t in topics)
-    response = await openai_client.chat.completions.create(
-        model="anthropic/claude-haiku-4-5",
-        max_tokens=600,
-        temperature=0.5,
+    return await chat(
         messages=[
             {"role": "system", "content": ARCHITECT_SYSTEM},
             {"role": "user", "content": f"Профиль стиля:\n{profile_str}\n\nТемы:\n{topics_str}\n\nСоставь контент-план на 2 недели в формате Markdown. Распредели темы по дням, укажи формат каждого поста."},
         ],
+        max_tokens=600,
+        temperature=0.5,
     )
-    return response.choices[0].message.content.strip()
